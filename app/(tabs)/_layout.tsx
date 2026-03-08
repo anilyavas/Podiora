@@ -1,13 +1,17 @@
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 
 import { TabBarIcon } from '../../components/TabBarIcon';
+import { useAuth } from '@clerk/expo';
 
 export default function TabLayout() {
+  const { isSignedIn } = useAuth();
+
+  if (!isSignedIn) {
+    return <Redirect href={'/(auth)/sign-in'} />;
+  }
+
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: 'black',
-      }}>
+    <Tabs>
       <Tabs.Screen
         name="index"
         options={{
