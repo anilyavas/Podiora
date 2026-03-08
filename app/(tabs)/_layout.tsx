@@ -1,6 +1,5 @@
-import { Link, Tabs } from 'expo-router';
+import { Tabs } from 'expo-router';
 
-import { HeaderButton } from '../../components/HeaderButton';
 import { TabBarIcon } from '../../components/TabBarIcon';
 
 export default function TabLayout() {
@@ -14,11 +13,6 @@ export default function TabLayout() {
         options={{
           title: 'Tab One',
           tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <HeaderButton />
-            </Link>
-          ),
         }}
       />
       <Tabs.Screen
