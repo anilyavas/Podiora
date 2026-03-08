@@ -1,14 +1,19 @@
 import '../global.css';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { Stack } from 'expo-router';
+import { Slot } from 'expo-router';
+import { ClerkProvider } from '@clerk/expo';
+import { tokenCache } from '@clerk/expo/token-cache';
 
 export default function RootLayout() {
+  const publishableKey = process.env.CLERK_PUBLISHABLE_KEY;
+
+  if (!publishableKey) {
+    throw new Error('Add your Clerk Publishable Key to the .env file');
+  }
+
   return (
-    <SafeAreaProvider>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      </Stack>
-    </SafeAreaProvider>
+    <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+      <Slot />
+    </ClerkProvider>
   );
 }
