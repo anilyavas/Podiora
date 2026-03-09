@@ -1,7 +1,15 @@
 import { useAuth, useSignUp } from '@clerk/expo';
 import { type Href, Link, useRouter } from 'expo-router';
 import React from 'react';
-import { Pressable, StyleSheet, TextInput, View, Text } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+  Text,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { Colors } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -58,111 +66,119 @@ export default function Page() {
   ) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.inner}>
-          <Text style={styles.logo}>
-            Podi<Text style={styles.logoAccent}>ora</Text>
-          </Text>
-          <Text style={styles.title}>Check your email</Text>
-          <Text style={styles.subtitle}>We sent a verification code to {emailAddress}</Text>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <View style={styles.inner}>
+            <Text style={styles.logo}>
+              Podi<Text style={styles.logoAccent}>ora</Text>
+            </Text>
+            <Text style={styles.title}>Check your email</Text>
+            <Text style={styles.subtitle}>We sent a verification code to {emailAddress}</Text>
 
-          <View style={styles.form}>
-            <Text style={styles.label}>Verification code</Text>
-            <TextInput
-              style={styles.input}
-              value={code}
-              placeholder="000000"
-              placeholderTextColor={Colors.textDim}
-              onChangeText={setCode}
-              keyboardType="numeric"
-            />
-            {errors.fields.code && <Text style={styles.error}>{errors.fields.code.message}</Text>}
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                pressed && styles.buttonPressed,
-                fetchStatus === 'fetching' && styles.buttonDisabled,
-              ]}
-              onPress={handleVerify}
-              disabled={fetchStatus === 'fetching'}>
-              <Text style={styles.buttonText}>
-                {fetchStatus === 'fetching' ? 'Verifying...' : 'Verify email'}
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => signUp.verifications.sendEmailCode()}
-              style={styles.secondaryButton}>
-              <Text style={styles.secondaryButtonText}>Resend code</Text>
-            </Pressable>
+            <View style={styles.form}>
+              <Text style={styles.label}>Verification code</Text>
+              <TextInput
+                style={styles.input}
+                value={code}
+                placeholder="000000"
+                placeholderTextColor={Colors.textDim}
+                onChangeText={setCode}
+                keyboardType="numeric"
+              />
+              {errors.fields.code && <Text style={styles.error}>{errors.fields.code.message}</Text>}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.button,
+                  pressed && styles.buttonPressed,
+                  fetchStatus === 'fetching' && styles.buttonDisabled,
+                ]}
+                onPress={handleVerify}
+                disabled={fetchStatus === 'fetching'}>
+                <Text style={styles.buttonText}>
+                  {fetchStatus === 'fetching' ? 'Verifying...' : 'Verify email'}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => signUp.verifications.sendEmailCode()}
+                style={styles.secondaryButton}>
+                <Text style={styles.secondaryButtonText}>Resend code</Text>
+              </Pressable>
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.inner}>
-        {/* Branding */}
-        <Text style={styles.logo}>
-          Podi<Text style={styles.logoAccent}>ora</Text>
-        </Text>
-        <Text style={styles.title}>Create account</Text>
-        <Text style={styles.subtitle}>Join Podiora and start listening</Text>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <View style={styles.inner}>
+          {/* Branding */}
+          <Text style={styles.logo}>
+            Podi<Text style={styles.logoAccent}>ora</Text>
+          </Text>
+          <Text style={styles.title}>Create account</Text>
+          <Text style={styles.subtitle}>Join Podiora and start listening</Text>
 
-        {/* Form */}
-        <View style={styles.form}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={styles.input}
-            autoCapitalize="none"
-            value={emailAddress}
-            placeholder="you@example.com"
-            placeholderTextColor={Colors.textDim}
-            onChangeText={setEmailAddress}
-            keyboardType="email-address"
-          />
-          {errors.fields.emailAddress && (
-            <Text style={styles.error}>{errors.fields.emailAddress.message}</Text>
-          )}
+          {/* Form */}
+          <View style={styles.form}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              style={styles.input}
+              autoCapitalize="none"
+              value={emailAddress}
+              placeholder="you@example.com"
+              placeholderTextColor={Colors.textDim}
+              onChangeText={setEmailAddress}
+              keyboardType="email-address"
+            />
+            {errors.fields.emailAddress && (
+              <Text style={styles.error}>{errors.fields.emailAddress.message}</Text>
+            )}
 
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            style={styles.input}
-            value={password}
-            placeholder="••••••••"
-            placeholderTextColor={Colors.textDim}
-            secureTextEntry
-            onChangeText={setPassword}
-          />
-          {errors.fields.password && (
-            <Text style={styles.error}>{errors.fields.password.message}</Text>
-          )}
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              style={styles.input}
+              value={password}
+              placeholder="••••••••"
+              placeholderTextColor={Colors.textDim}
+              secureTextEntry
+              onChangeText={setPassword}
+            />
+            {errors.fields.password && (
+              <Text style={styles.error}>{errors.fields.password.message}</Text>
+            )}
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.button,
-              pressed && styles.buttonPressed,
-              (!emailAddress || !password || fetchStatus === 'fetching') && styles.buttonDisabled,
-            ]}
-            onPress={handleSubmit}
-            disabled={!emailAddress || !password || fetchStatus === 'fetching'}>
-            <Text style={styles.buttonText}>
-              {fetchStatus === 'fetching' ? 'Creating account...' : 'Create account'}
-            </Text>
-          </Pressable>
+            <Pressable
+              style={({ pressed }) => [
+                styles.button,
+                pressed && styles.buttonPressed,
+                (!emailAddress || !password || fetchStatus === 'fetching') && styles.buttonDisabled,
+              ]}
+              onPress={handleSubmit}
+              disabled={!emailAddress || !password || fetchStatus === 'fetching'}>
+              <Text style={styles.buttonText}>
+                {fetchStatus === 'fetching' ? 'Creating account...' : 'Create account'}
+              </Text>
+            </Pressable>
+          </View>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Already have an account? </Text>
+            <Link href="/sign-in">
+              <Text style={styles.footerLink}>Sign in</Text>
+            </Link>
+          </View>
+
+          {/* Required for Clerk bot protection */}
+          <View nativeID="clerk-captcha" />
         </View>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Already have an account? </Text>
-          <Link href="/sign-in">
-            <Text style={styles.footerLink}>Sign in</Text>
-          </Link>
-        </View>
-
-        {/* Required for Clerk bot protection */}
-        <View nativeID="clerk-captcha" />
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
