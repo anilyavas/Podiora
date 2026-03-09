@@ -1,12 +1,9 @@
-// import { ThemedText } from '@/components/themed-text'
-// import { ThemedView } from '@/components/themed-view'
 import { useAuth, useSignUp } from '@clerk/expo';
 import { type Href, Link, useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, TextInput, View, Text } from 'react-native';
-
-const ThemedText = Text;
-const ThemedView = View;
+import { Colors } from '@/constants/colors';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Page() {
   const { signUp, errors, fetchStatus } = useSignUp();
@@ -26,25 +23,19 @@ export default function Page() {
       console.error(JSON.stringify(error, null, 2));
       return;
     }
-
     if (!error) await signUp.verifications.sendEmailCode();
   };
 
   const handleVerify = async () => {
-    await signUp.verifications.verifyEmailCode({
-      code,
-    });
+    await signUp.verifications.verifyEmailCode({ code });
+
     if (signUp.status === 'complete') {
       await signUp.finalize({
-        // Redirect the user to the home page after signing up
         navigate: ({ session, decorateUrl }) => {
           if (session?.currentTask) {
-            // Handle pending session tasks
-            // See https://clerk.com/docs/guides/development/custom-flows/authentication/session-tasks
             console.log(session?.currentTask);
             return;
           }
-
           const url = decorateUrl('/');
           if (url.startsWith('http')) {
             window.location.href = url;
@@ -54,14 +45,11 @@ export default function Page() {
         },
       });
     } else {
-      // Check why the sign-up is not complete
       console.error('Sign-up attempt not complete:', signUp);
     }
   };
 
-  if (signUp.status === 'complete' || isSignedIn) {
-    return null;
-  }
+  if (signUp.status === 'complete' || isSignedIn) return null;
 
   if (
     signUp.status === 'missing_requirements' &&
@@ -69,160 +57,215 @@ export default function Page() {
     signUp.missingFields.length === 0
   ) {
     return (
-      <ThemedView style={styles.container}>
-        <ThemedText type="title" style={styles.title}>
-          Verify your account
-        </ThemedText>
-        <TextInput
-          style={styles.input}
-          value={code}
-          placeholder="Enter your verification code"
-          placeholderTextColor="#666666"
-          onChangeText={(code) => setCode(code)}
-          keyboardType="numeric"
-        />
-        {errors.fields.code && (
-          <ThemedText style={styles.error}>{errors.fields.code.message}</ThemedText>
-        )}
-        <Pressable
-          style={({ pressed }) => [
-            styles.button,
-            fetchStatus === 'fetching' && styles.buttonDisabled,
-            pressed && styles.buttonPressed,
-          ]}
-          onPress={handleVerify}
-          disabled={fetchStatus === 'fetching'}>
-          <ThemedText style={styles.buttonText}>Verify</ThemedText>
-        </Pressable>
-        <Pressable
-          style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
-          onPress={() => signUp.verifications.sendEmailCode()}>
-          <ThemedText style={styles.secondaryButtonText}>I need a new code</ThemedText>
-        </Pressable>
-      </ThemedView>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.inner}>
+          <Text style={styles.logo}>
+            Podi<Text style={styles.logoAccent}>ora</Text>
+          </Text>
+          <Text style={styles.title}>Check your email</Text>
+          <Text style={styles.subtitle}>We sent a verification code to {emailAddress}</Text>
+
+          <View style={styles.form}>
+            <Text style={styles.label}>Verification code</Text>
+            <TextInput
+              style={styles.input}
+              value={code}
+              placeholder="000000"
+              placeholderTextColor={Colors.textDim}
+              onChangeText={setCode}
+              keyboardType="numeric"
+            />
+            {errors.fields.code && <Text style={styles.error}>{errors.fields.code.message}</Text>}
+            <Pressable
+              style={({ pressed }) => [
+                styles.button,
+                pressed && styles.buttonPressed,
+                fetchStatus === 'fetching' && styles.buttonDisabled,
+              ]}
+              onPress={handleVerify}
+              disabled={fetchStatus === 'fetching'}>
+              <Text style={styles.buttonText}>
+                {fetchStatus === 'fetching' ? 'Verifying...' : 'Verify email'}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => signUp.verifications.sendEmailCode()}
+              style={styles.secondaryButton}>
+              <Text style={styles.secondaryButtonText}>Resend code</Text>
+            </Pressable>
+          </View>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText type="title" style={styles.title}>
-        Sign up
-      </ThemedText>
-      <ThemedText style={styles.label}>Email address</ThemedText>
-      <TextInput
-        style={styles.input}
-        autoCapitalize="none"
-        value={emailAddress}
-        placeholder="Enter email"
-        placeholderTextColor="#666666"
-        onChangeText={(emailAddress) => setEmailAddress(emailAddress)}
-        keyboardType="email-address"
-      />
-      {errors.fields.emailAddress && (
-        <ThemedText style={styles.error}>{errors.fields.emailAddress.message}</ThemedText>
-      )}
-      <ThemedText style={styles.label}>Password</ThemedText>
-      <TextInput
-        style={styles.input}
-        value={password}
-        placeholder="Enter password"
-        placeholderTextColor="#666666"
-        secureTextEntry={true}
-        onChangeText={(password) => setPassword(password)}
-      />
-      {errors.fields.password && (
-        <ThemedText style={styles.error}>{errors.fields.password.message}</ThemedText>
-      )}
-      <Pressable
-        style={({ pressed }) => [
-          styles.button,
-          (!emailAddress || !password || fetchStatus === 'fetching') && styles.buttonDisabled,
-          pressed && styles.buttonPressed,
-        ]}
-        onPress={handleSubmit}
-        disabled={!emailAddress || !password || fetchStatus === 'fetching'}>
-        <ThemedText style={styles.buttonText}>Sign up</ThemedText>
-      </Pressable>
-      {/* For your debugging purposes. You can just console.log errors, but we put them in the UI for convenience */}
-      {errors && <ThemedText style={styles.debug}>{JSON.stringify(errors, null, 2)}</ThemedText>}
+    <SafeAreaView style={styles.container}>
+      <View style={styles.inner}>
+        {/* Branding */}
+        <Text style={styles.logo}>
+          Podi<Text style={styles.logoAccent}>ora</Text>
+        </Text>
+        <Text style={styles.title}>Create account</Text>
+        <Text style={styles.subtitle}>Join Podiora and start listening</Text>
 
-      <View style={styles.linkContainer}>
-        <ThemedText>Already have an account? </ThemedText>
-        <Link href="/sign-in">
-          <ThemedText type="link">Sign in</ThemedText>
-        </Link>
+        {/* Form */}
+        <View style={styles.form}>
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            style={styles.input}
+            autoCapitalize="none"
+            value={emailAddress}
+            placeholder="you@example.com"
+            placeholderTextColor={Colors.textDim}
+            onChangeText={setEmailAddress}
+            keyboardType="email-address"
+          />
+          {errors.fields.emailAddress && (
+            <Text style={styles.error}>{errors.fields.emailAddress.message}</Text>
+          )}
+
+          <Text style={styles.label}>Password</Text>
+          <TextInput
+            style={styles.input}
+            value={password}
+            placeholder="••••••••"
+            placeholderTextColor={Colors.textDim}
+            secureTextEntry
+            onChangeText={setPassword}
+          />
+          {errors.fields.password && (
+            <Text style={styles.error}>{errors.fields.password.message}</Text>
+          )}
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.button,
+              pressed && styles.buttonPressed,
+              (!emailAddress || !password || fetchStatus === 'fetching') && styles.buttonDisabled,
+            ]}
+            onPress={handleSubmit}
+            disabled={!emailAddress || !password || fetchStatus === 'fetching'}>
+            <Text style={styles.buttonText}>
+              {fetchStatus === 'fetching' ? 'Creating account...' : 'Create account'}
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>Already have an account? </Text>
+          <Link href="/sign-in">
+            <Text style={styles.footerLink}>Sign in</Text>
+          </Link>
+        </View>
+
+        {/* Required for Clerk bot protection */}
+        <View nativeID="clerk-captcha" />
       </View>
-
-      {/* Required for sign-up flows. Clerk's bot sign-up protection is enabled by default */}
-      <View nativeID="clerk-captcha" />
-    </ThemedView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    gap: 12,
+    backgroundColor: Colors.background,
+  },
+  inner: {
+    flex: 1,
+    padding: 24,
+    justifyContent: 'center',
+  },
+  logo: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  logoAccent: {
+    color: Colors.accent,
   },
   title: {
-    marginBottom: 8,
+    fontSize: 22,
+    fontWeight: '700',
+    color: Colors.text,
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    marginBottom: 32,
+  },
+  form: {
+    gap: 10,
   },
   label: {
+    fontSize: 13,
     fontWeight: '600',
-    fontSize: 14,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: '#fff',
-  },
-  button: {
-    backgroundColor: '#0a7ea4',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: 'center',
+    color: Colors.textMuted,
+    marginBottom: 4,
     marginTop: 8,
   },
+  input: {
+    backgroundColor: Colors.card,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 15,
+    color: Colors.text,
+  },
+  button: {
+    backgroundColor: Colors.accent,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 16,
+  },
   buttonPressed: {
-    opacity: 0.7,
+    opacity: 0.8,
   },
   buttonDisabled: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
   buttonText: {
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: '700',
+    fontSize: 15,
+    alignSelf: 'center',
   },
   secondaryButton: {
     paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
     alignItems: 'center',
     marginTop: 8,
   },
   secondaryButtonText: {
-    color: '#0a7ea4',
+    color: Colors.accent,
     fontWeight: '600',
+    fontSize: 14,
   },
-  linkContainer: {
+  footer: {
     flexDirection: 'row',
-    gap: 4,
-    marginTop: 12,
+    justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 32,
+  },
+  footerText: {
+    color: Colors.textMuted,
+    fontSize: 14,
+  },
+  footerLink: {
+    color: Colors.accent,
+    fontWeight: '700',
+    fontSize: 14,
   },
   error: {
-    color: '#d32f2f',
+    color: '#FF6B6B',
     fontSize: 12,
-    marginTop: -8,
-  },
-  debug: {
-    fontSize: 10,
-    opacity: 0.5,
-    marginTop: 8,
+    marginTop: 4,
   },
 });

@@ -1,5 +1,4 @@
 import '../global.css';
-
 import { Slot } from 'expo-router';
 import { ClerkProvider } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
