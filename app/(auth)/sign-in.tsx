@@ -1,25 +1,38 @@
-import { useSignIn } from '@clerk/expo';
+import { useOAuth, useSignIn } from '@clerk/expo';
+import * as WebBrowser from 'expo-web-browser';
 import { type Href, Link, useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
-  Pressable,
-  StyleSheet,
-  TextInput,
-  View,
-  Text,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import { Colors } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AntDesign } from '@expo/vector-icons';
 
 export default function Page() {
   const { signIn, errors, fetchStatus } = useSignIn();
   const router = useRouter();
 
+  const { startOAuthFlow: startGoogleFlow } = useOAuth({ strategy: 'oauth_google' });
+  const { startOAuthFlow: startAppleFlow } = useOAuth({ strategy: 'oauth_apple' });
+
   const [emailAddress, setEmailAddress] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [code, setCode] = React.useState('');
+
+  useEffect(() => {
+    WebBrowser.warmUpAsync();
+    return () => {
+      WebBrowser.coolDownAsync();
+    };
+  }, []);
 
   const handleSubmit = async () => {
     const { error } = await signIn.password({
@@ -62,7 +75,6 @@ export default function Page() {
 
   const handleVerify = async () => {
     await signIn.mfa.verifyEmailCode({ code });
-
     if (signIn.status === 'complete') {
       await signIn.finalize({
         navigate: ({ session, decorateUrl }) => {
@@ -83,47 +95,74 @@ export default function Page() {
     }
   };
 
+  const handleGoogleAuth = async () => {
+    try {
+      const { createdSessionId, setActive } = await startGoogleFlow();
+      if (createdSessionId && setActive) {
+        await setActive({ session: createdSessionId });
+      }
+    } catch (err) {
+      console.error('Google OAuth error:', err);
+    }
+  };
+
+  const handleAppleAuth = async () => {
+    try {
+      const { createdSessionId, setActive } = await startAppleFlow();
+      if (createdSessionId && setActive) {
+        await setActive({ session: createdSessionId });
+      }
+    } catch (err) {
+      console.error('Apple OAuth error:', err);
+    }
+  };
+
   if (signIn.status === 'needs_client_trust') {
     return (
       <SafeAreaView style={styles.container}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <View style={styles.inner}>
-            <Text style={styles.logo}>
-              Podi<Text style={styles.logoAccent}>ora</Text>
-            </Text>
-            <Text style={styles.title}>Verify your account</Text>
-            <Text style={styles.subtitle}>Enter the code sent to your email</Text>
-
-            <View style={styles.form}>
-              <Text style={styles.label}>Verification code</Text>
-              <TextInput
-                style={styles.input}
-                value={code}
-                placeholder="000000"
-                placeholderTextColor={Colors.textDim}
-                onChangeText={setCode}
-                keyboardType="numeric"
-              />
-              {errors.fields.code && <Text style={styles.error}>{errors.fields.code.message}</Text>}
-              <Pressable
-                style={({ pressed }) => [
-                  styles.button,
-                  pressed && styles.buttonPressed,
-                  fetchStatus === 'fetching' && styles.buttonDisabled,
-                ]}
-                onPress={handleVerify}
-                disabled={fetchStatus === 'fetching'}>
-                <Text style={styles.buttonText}>
-                  {fetchStatus === 'fetching' ? 'Verifying...' : 'Verify'}
-                </Text>
-              </Pressable>
-              <Pressable onPress={() => signIn.mfa.sendEmailCode()} style={styles.secondaryButton}>
-                <Text style={styles.secondaryButtonText}>Resend code</Text>
-              </Pressable>
+          <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+            <View style={styles.inner}>
+              <Text style={styles.logo}>
+                Podi<Text style={styles.logoAccent}>ora</Text>
+              </Text>
+              <Text style={styles.title}>Verify your account</Text>
+              <Text style={styles.subtitle}>Enter the code sent to your email</Text>
+              <View style={styles.form}>
+                <Text style={styles.label}>Verification code</Text>
+                <TextInput
+                  style={styles.input}
+                  value={code}
+                  placeholder="000000"
+                  placeholderTextColor={Colors.textDim}
+                  onChangeText={setCode}
+                  keyboardType="numeric"
+                />
+                {errors.fields.code && (
+                  <Text style={styles.error}>{errors.fields.code.message}</Text>
+                )}
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.button,
+                    pressed && styles.buttonPressed,
+                    fetchStatus === 'fetching' && styles.buttonDisabled,
+                  ]}
+                  onPress={handleVerify}
+                  disabled={fetchStatus === 'fetching'}>
+                  <Text style={styles.buttonText}>
+                    {fetchStatus === 'fetching' ? 'Verifying...' : 'Verify'}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => signIn.mfa.sendEmailCode()}
+                  style={styles.secondaryButton}>
+                  <Text style={styles.secondaryButtonText}>Resend code</Text>
+                </Pressable>
+              </View>
             </View>
-          </View>
+          </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
     );
@@ -134,65 +173,92 @@ export default function Page() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <View style={styles.inner}>
-          {/* Branding */}
-          <Text style={styles.logo}>
-            Podi<Text style={styles.logoAccent}>ora</Text>
-          </Text>
-          <Text style={styles.title}>Welcome back</Text>
-          <Text style={styles.subtitle}>Sign in to continue listening</Text>
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+          <View style={styles.inner}>
+            {/* Branding */}
+            <Text style={styles.logo}>
+              Podi<Text style={styles.logoAccent}>ora</Text>
+            </Text>
+            <Text style={styles.title}>Welcome back</Text>
+            <Text style={styles.subtitle}>Sign in to continue listening</Text>
 
-          {/* Form */}
-          <View style={styles.form}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              autoCapitalize="none"
-              value={emailAddress}
-              placeholder="you@example.com"
-              placeholderTextColor={Colors.textDim}
-              onChangeText={setEmailAddress}
-              keyboardType="email-address"
-            />
-            {errors.fields.identifier && (
-              <Text style={styles.error}>{errors.fields.identifier.message}</Text>
-            )}
+            {/* Form */}
+            <View style={styles.form}>
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                style={styles.input}
+                autoCapitalize="none"
+                value={emailAddress}
+                placeholder="you@example.com"
+                placeholderTextColor={Colors.textDim}
+                onChangeText={setEmailAddress}
+                keyboardType="email-address"
+              />
+              {errors.fields.identifier && (
+                <Text style={styles.error}>{errors.fields.identifier.message}</Text>
+              )}
+              <Text style={styles.label}>Password</Text>
+              <TextInput
+                style={styles.input}
+                value={password}
+                placeholder="••••••••"
+                placeholderTextColor={Colors.textDim}
+                secureTextEntry
+                onChangeText={setPassword}
+              />
+              {errors.fields.password && (
+                <Text style={styles.error}>{errors.fields.password.message}</Text>
+              )}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.button,
+                  pressed && styles.buttonPressed,
+                  (!emailAddress || !password || fetchStatus === 'fetching') &&
+                    styles.buttonDisabled,
+                ]}
+                onPress={handleSubmit}
+                disabled={!emailAddress || !password || fetchStatus === 'fetching'}>
+                <Text style={styles.buttonText}>
+                  {fetchStatus === 'fetching' ? 'Signing in...' : 'Sign in'}
+                </Text>
+              </Pressable>
+            </View>
 
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              value={password}
-              placeholder="••••••••"
-              placeholderTextColor={Colors.textDim}
-              secureTextEntry
-              onChangeText={setPassword}
-            />
-            {errors.fields.password && (
-              <Text style={styles.error}>{errors.fields.password.message}</Text>
-            )}
+            {/* Divider */}
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or continue with</Text>
+              <View style={styles.dividerLine} />
+            </View>
 
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                pressed && styles.buttonPressed,
-                (!emailAddress || !password || fetchStatus === 'fetching') && styles.buttonDisabled,
-              ]}
-              onPress={handleSubmit}
-              disabled={!emailAddress || !password || fetchStatus === 'fetching'}>
-              <Text style={styles.buttonText}>
-                {fetchStatus === 'fetching' ? 'Signing in...' : 'Sign in'}
-              </Text>
-            </Pressable>
+            {/* Social Buttons */}
+            {/* Social Buttons */}
+            <View style={styles.socialColumn}>
+              <Pressable
+                style={({ pressed }) => [styles.socialButton, pressed && styles.buttonPressed]}
+                onPress={handleGoogleAuth}>
+                <Text style={styles.socialButtonText}>
+                  <AntDesign name="google" size={20} color={Colors.text} /> Continue with Google
+                </Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [styles.socialButton, pressed && styles.buttonPressed]}
+                onPress={handleAppleAuth}>
+                <Text style={styles.socialButtonText}>
+                  <AntDesign name="apple" size={20} color={Colors.text} /> Continue with Apple
+                </Text>
+              </Pressable>
+            </View>
+
+            {/* Footer */}
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Don't have an account? </Text>
+              <Link href="/sign-up">
+                <Text style={styles.footerLink}>Sign up</Text>
+              </Link>
+            </View>
           </View>
-
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account? </Text>
-            <Link href="/sign-up">
-              <Text style={styles.footerLink}>Sign up</Text>
-            </Link>
-          </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -257,6 +323,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 16,
   },
+  socialColumn: {
+    gap: 15,
+    marginTop: 4,
+  },
+  socialButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: Colors.card,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 14,
+    paddingVertical: 16,
+  },
+  socialButtonText: {
+    color: Colors.text,
+    fontWeight: '600',
+    fontSize: 15,
+    textAlign: 'center',
+  },
   buttonPressed: {
     opacity: 0.8,
   },
@@ -267,7 +353,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
     fontSize: 15,
-    alignSelf: 'center',
   },
   secondaryButton: {
     paddingVertical: 12,
@@ -279,6 +364,24 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 24,
+    marginBottom: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.border,
+  },
+  dividerText: {
+    color: Colors.textDim,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
